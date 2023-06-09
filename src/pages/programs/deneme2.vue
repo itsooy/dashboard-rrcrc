@@ -1,0 +1,657 @@
+<template>
+  <q-page>
+                <!--TABLE-->
+    <div class="row q-col-gutter-sm q-ma-xs q-mr-sm">
+      <div class="col-lg-4 col-md-12 col-sm-12 col-xs-12">
+        <q-card>
+          <q-table
+            title="deneme2"
+            :data="data"
+            :columns="columns"
+            row-key="name"
+            :filter="filter"
+            dense
+            :rows-per-page-options="[0]" 
+            :pagination.sync="pagination"
+            hide-bottom
+            style="height: 550px"
+          >
+            <template v-slot:top-right="props">
+            <!--
+              <q-input outlined dense debounce="300" v-model="filter" placeholder="Search">
+                <template v-slot:append>
+                  <q-icon name="search"/>
+                </template>
+              </q-input>
+              -->
+              <q-btn
+                :icon-right="props.inFullscreen ? 'fullscreen_exit' : 'fullscreen'"
+                label="Fullscreen"
+                @click="props.toggleFullscreen"
+                v-if="mode === 'list'"
+                flat
+              >
+                <q-tooltip
+                  :disable="$q.platform.is.mobile"
+                  v-close-popup
+                >{{props.inFullscreen ? 'Exit Fullscreen' : 'Toggle Fullscreen'}}
+                </q-tooltip>
+              </q-btn>
+              <!--
+              <q-btn
+                flat
+                round
+                dense
+                :icon="mode === 'grid' ? 'list' : 'grid_on'"
+                @click="mode = mode === 'grid' ? 'list' : 'grid'; separator = mode === 'grid' ? 'none' : 'horizontal'"
+                v-if="!props.inFullscreen"
+              >
+                <q-tooltip
+                  :disable="$q.platform.is.mobile"
+                  v-close-popup
+                >{{mode==='grid' ? 'List' : 'Grid'}}
+                </q-tooltip>
+              </q-btn>
+              -->
+              <q-btn
+                color="primary"
+                icon-right="archive"
+                label="Export to CSV"
+                no-caps
+                @click="exportTable"
+              />
+            </template>
+            
+            <template v-slot:body-cell-kpi1="props">
+              <q-td :props="props">
+                <q-chip
+                  :color="(props.row.kpi1 <= '12')?'red':(props.row.kpi1 > '12' && props.row.kpi1 <= '15')?'orange':(props.row.kpi1 > '15' && props.row.kpi1 < '21')?'yellow-7':(props.row.kpi1 >= '21' && props.row.kpi1 < '40')?'green':(props.row.kpi1 >= '40'?'blue':'grey-2')"
+                  text-color="white"
+                  dense
+                  class="text-weight-bolder"
+                  square
+                  style="width: 60px"
+                >{{props.row.kpi1}}
+                <q-tooltip>
+                  # of recipient agencies
+                </q-tooltip>  
+                </q-chip>
+              </q-td>
+            </template>
+            <template v-slot:body-cell-kpi2="props">
+              <q-td :props="props">
+                <q-chip
+                  :color="(props.row.kpi2 <= '2')?'red':(props.row.kpi2 > '2' && props.row.kpi2 <= '3')?'orange':(props.row.kpi2 > '3' && props.row.kpi2 < '5')?'yellow-7':(props.row.kpi2 >= '5'?'green':'grey-2')"
+                  text-color="white"
+                  dense
+                  class="text-weight-bolder"
+                  square
+                  style="width: 60px"
+                >{{props.row.kpi2}}
+                <q-tooltip>
+                  # of donations
+                </q-tooltip>  
+                </q-chip>
+              </q-td>
+            </template>
+            <template v-slot:body-cell-kpi3="props">
+              <q-td :props="props">
+                <q-chip
+                  :color="(props.row.kpi3 <= '10000')?'red':(props.row.kpi3 > '10000' && props.row.kpi3 < '45000')?'orange':(props.row.kpi3 >= '45000'?'green':'grey-2')"
+                  text-color="white"
+                  dense
+                  class="text-weight-bolder"
+                  square
+                  style="width: 70px"
+                >{{props.row.kpi3}}
+                <q-tooltip>
+                  $ donations received
+                </q-tooltip>  
+                </q-chip>
+              </q-td>
+            </template>
+            <template v-slot:body-cell-kpi4="props">
+              <q-td :props="props">
+                <q-chip
+                  :color="(props.row.kpi4 <= '10000')?'red':(props.row.kpi4 > '10000' && props.row.kpi4 < '25000')?'orange':(props.row.kpi4 >= '25000'?'green':'grey-2')"
+                  text-color="white"
+                  dense
+                  class="text-weight-bolder"
+                  square
+                  style="width: 70px"
+                >{{props.row.kpi4}}
+                <q-tooltip>
+                  $ donations awarded
+                </q-tooltip>  
+                </q-chip>
+              </q-td>
+            </template>
+          </q-table>
+        </q-card>
+      </div>
+      <div class="col-lg-4 col-md-12 col-sm-12 col-xs-12">
+          <q-card flat bordered class="">
+
+            <q-card-section style="height:150px">
+              <q-img src="/statics/images/rrcrc-logo_1200x300.png"></q-img>
+            </q-card-section>
+          </q-card>
+        <q-card flat bordered class="">
+            <q-card-section class="row">
+              <div class="text-h6 col-12">Budget Usage
+                <q-btn flat dense icon="fas fa-download" class="float-right" @click="SaveImage('gauge')"
+                       :color="!$q.dark.isActive? 'grey-8':'white'">
+                  <q-tooltip>Download</q-tooltip>
+                </q-btn>
+              </div>
+
+            </q-card-section>
+
+            <q-separator inset></q-separator>
+
+            <q-card-section>
+              <IEcharts :option="gaugeOptions" ref="gauge" :resizable="true" style="height:300px"/>
+            </q-card-section>
+          </q-card>
+      </div>
+      <div class="col-lg-4 col-md-12 col-sm-12 col-xs-12">
+        <q-card flat bordered class="">
+          <q-card-section>
+            <div class="text-h6">Expense Categories
+              <q-btn flat dense icon="fas fa-download" class="float-right" @click="SaveImage('pie')"
+                     :color="!$q.dark.isActive? 'grey-8':'white'">
+                <q-tooltip>Download</q-tooltip>
+              </q-btn>
+            </div>
+          </q-card-section>
+
+          <q-separator inset></q-separator>
+
+          <q-card-section>
+            <IEcharts ref="pie" :option="pieOptions" :resizable="true" style="height:450px"/>
+          </q-card-section>
+        </q-card>
+      </div>
+      
+    </div>
+                <!--TABLE DONE-->
+    <div>
+      <div class="row q-col-gutter-sm q-ma-xs q-mr-sm">
+
+        <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+
+          <q-card flat bordered class="">
+            <q-card-section class="row">
+              <div class="text-h6 col-12">Process Chart
+                <q-btn flat dense icon="fas fa-download" class="float-right" @click="SaveImage('line')"
+                       :color="!$q.dark.isActive? 'grey-8':'white'">
+                  <q-tooltip>Download</q-tooltip>
+                </q-btn>
+              </div>
+            </q-card-section>
+
+            <q-separator inset></q-separator>
+
+            <q-card-section>
+              <IEcharts ref="line" :option="lineChartOption" :resizable="true" style="height:250px"/>
+            </q-card-section>
+          </q-card>
+        </div>
+      </div>
+    </div>
+  </q-page>
+</template>
+
+<script>
+    import Vue from 'vue';
+    import IEcharts from 'vue-echarts-v3/src/full.js';
+    import {exportFile} from 'quasar';
+
+    Vue.component('IEcharts', IEcharts);
+
+    function wrapCsvValue(val, formatFn) {
+        let formatted = formatFn !== void 0
+            ? formatFn(val)
+            : val
+
+        formatted = formatted === void 0 || formatted === null
+            ? ''
+            : String(formatted)
+
+        formatted = formatted.split('"').join('""')
+
+        return `"${formatted}"`
+    }
+
+    export default {
+        data() {
+            return {
+                filter: '',
+                mode: 'list',
+
+                gaugeOptions: {
+                    tooltip: {
+                        formatter: '{a} <br/>{b} : {c}%'
+                    },
+                    series: [
+                        {
+                            type: 'gauge',
+                            name: "Budget Usage",
+                            detail: {formatter: '{value}%'},
+                            data: [{value: 133}],
+                            min: 200,
+                            max: 0,
+                            radius: '100%',
+                            axisLine: {
+                                show: true,
+                                lineStyle: {
+                                    color: [[0.30, '#c10015'], [0.50, '#fb6b00'], [0.80, '#009688'], [1, '#388e3c']],
+                                    width: 30
+                                },
+                            },
+                        }
+                    ]
+                },
+                columns: [
+                    {
+                        name: 'desc',
+                        required: true,
+                        label: 'Months',
+                        align: 'left',
+                        format: (val) => `${val}`,
+                        field: row => row.name,
+                    },
+                    {name: 'kpi1', align: 'left', label: 'KPI 1', field: 'kpi1', style: '#46ff3c', badge: 'deneme',},
+                    {name: 'kpi2', align: 'left', label: 'KPI 2', field: 'kpi2'},
+                    {name: 'kpi3', align: 'left', label: 'KPI 3', field: 'kpi3'},
+                    {name: 'kpi4', align: 'left', label: 'KPI 4', field: 'kpi4'}
+                ],
+                data: [
+                    {
+                        name: 'January',
+                        kpi1: 4,
+                        kpi2: 2,
+                        kpi3: 53465,
+                        kpi4: 14700,
+                    },
+                    {
+                        name: 'February',
+                        kpi1: 15,
+                        kpi2: 11,
+                        kpi3: 69751,
+                        kpi4: 21466,
+                    },
+                    {
+                        name: 'March',
+                        kpi1: 16,
+                        kpi2: 5,
+                        kpi3: 247410.65,
+                        kpi4: 19245,
+                    },
+                    {
+                        name: 'April',
+                        kpi1: 86,
+                        kpi2: 5,
+                        kpi3: 7565,
+                        kpi4: 433719,
+                    },
+                    {
+                        name: 'May',
+                        kpi1: 10,
+                        kpi2: 6,
+                        kpi3: 30205,
+                        kpi4: 23510,
+                    },
+                    {
+                        name: 'June',
+                        kpi1: 22,
+                        kpi2: 8,
+                        kpi3: 13630,
+                        kpi4: 13479,
+                    },
+                    {
+                        name: 'July',
+                        kpi1: 23,
+                        kpi2: 4,
+                        kpi3: 406203,
+                        kpi4: 100181,
+                    },
+                    {
+                        name: 'August',
+                        kpi1: 32,
+                        kpi2: 5,
+                        kpi3: 33155,
+                        kpi4: 60182,
+                    },
+                    {
+                        name: 'September',
+                        kpi1: 34,
+                        kpi2: 5,
+                        kpi3: 97900,
+                        kpi4: 64933,
+                    },
+                    {
+                        name: 'October',
+                        kpi1: 40,
+                        kpi2: 6,
+                        kpi3: 44162,
+                        kpi4: 31160,
+                    },
+                    {
+                        name: 'November',
+                        kpi1: 22,
+                        kpi2: 9,
+                        kpi3: 38518,
+                        kpi4: 21988,
+                    },
+                    {
+                        name: 'December',
+                        kpi1: 40,
+                        kpi2: 6,
+                        kpi3: 137581,
+                        kpi4: 52207,
+                    }
+                ],
+                pagination: {
+                    rowsPerPage: 10000
+                }
+            }
+        },
+        computed: {
+            barOptions() {
+                return {
+                    grid: {
+                        bottom: '20%',
+                        left: '15%',
+                        top: '3%'
+                    },
+                    legend: {
+                        bottom: 0,
+                        textStyle: {
+                            color: this.$q.dark.isActive ? 'white' : '#676767'
+                        }
+                    },
+                    tooltip: {},
+                    dataset: {
+                        dimensions: ['time_period', 'sale', 'goal'],
+                        source: [
+                            {time_period: 'Jan 2019', sale: 50, goal: 70},
+                            {time_period: 'Feb 2019', sale: 80, goal: 75},
+                            {time_period: 'Mar 2019', sale: 86, goal: 80},
+                            {time_period: 'Apr 2019', sale: 72, goal: 85}
+                        ]
+                    },
+                    xAxis: {
+                        type: 'category',
+                        // axisLabel: {
+                        //     rotate: 45
+                        // }
+                        axisLabel: {
+                            color: this.$q.dark.isActive ? 'white' : '#676767'
+                        }
+                    },
+                    yAxis: {
+                        // name: 'Goal',
+                        // nameLocation: 'center',
+                        // nameGap: 30,
+                        // nameTextStyle:{
+                        //     fontWeight: 'bold'
+                        // }
+                        axisLabel: {
+                            color: this.$q.dark.isActive ? 'white' : '#676767'
+                        }
+                    },
+                    series: [
+                        {type: 'bar', name: 'Sales'},
+                        {type: 'bar', name: 'Goals'}
+                    ]
+                }
+            },
+            lineChartOption() {
+                return {
+                    grid: {
+                        bottom: '20%',
+                        left: '15%',
+                        top: '3%'
+                    },
+                    legend: {
+                        bottom: 0,
+                        textStyle: {
+                            color: this.$q.dark.isActive ? 'white' : '#676767'
+                        }
+                    },
+                    tooltip: {
+                        // formatter:
+                        //     function (param) {
+                        //     console.log(param)
+                        //     // return param.seriesName + '<br />' + param.name + ': ';
+                        // }
+                    },
+                    dataset: {
+                        dimensions: ['months', 'kpi1', 'kpi2', 'kpi3', 'kpi4'],
+                        source: [
+                            //{months: 'January', kpi1: , kpi2: , kpi3: , kpi4: },
+                            {months: 'January', kpi1: 4, kpi2: 2, kpi3: 53465, kpi4: 14700},
+                            {months: 'February', kpi1: 15, kpi2: 11, kpi3: 69751, kpi4: 21466},
+                            {months: 'March', kpi1: 11, kpi2: 5, kpi3: 247410.65, kpi4: 19245},
+                            {months: 'April', kpi1: 86, kpi2: 5, kpi3: 7565, kpi4: 433719},
+                            {months: 'May', kpi1: 10, kpi2: 6, kpi3: 30205, kpi4: 23510},
+                            {months: 'June', kpi1: 22, kpi2: 8, kpi3: 13630, kpi4: 13479},
+                            {months: 'July', kpi1: 23, kpi2: 4, kpi3: 406203, kpi4: 100181},
+                            {months: 'August', kpi1: 32, kpi2: 5, kpi3: 33155, kpi4: 60182},
+                            {months: 'September', kpi1: 34, kpi2: 5, kpi3: 97900, kpi4: 64933},
+                            {months: 'October', kpi1: 40, kpi2: 6, kpi3: 44162, kpi4: 31160},
+                            {months: 'November', kpi1: 22, kpi2: 9, kpi3: 38518, kpi4: 21988},
+                            {months: 'December', kpi1: 40, kpi2: 6, kpi3: 137581, kpi4: 52207}
+                        ]
+                    },
+                    xAxis: {
+                        type: 'category',
+                        // axisLabel: {
+                        //     rotate: 45
+                        // }
+                        axisLabel: {
+                            color: this.$q.dark.isActive ? 'white' : '#676767'
+                        }
+                    },
+                    yAxis: {
+                        axisLabel: {
+                            formatter: function (value, index) {
+                                return value //+ ' %'
+                            },
+                            color: this.$q.dark.isActive ? 'white' : '#676767'
+                        }
+                    },
+                    series: [
+                        {type: 'line', name: 'KPI1'},
+                        {type: 'line', name: 'KPI2'},
+                        {type: 'line', name: 'KPI3'},
+                        {type: 'line', name: 'KPI4'}
+                    ]
+                }
+            },
+            pieOptions() {
+                return {
+                    tooltip: {
+                        show: true
+                    },
+                    legend: {
+                        orient: 'vertical',
+                        bottom: 0,
+                        width: 600,
+                        left:0,
+                        textStyle: {
+                            color: this.$q.dark.isActive ? 'white' : '#676767'
+                        }
+                    },
+                    series: [
+                        {
+                            name: 'Categories',
+                            type: 'pie',
+                            radius: ['30%', '70%'],
+                            avoidLabelOverlap: false,
+                            label: {
+                                normal: {
+                                    show: true,
+                                    position: 'inner',
+                                    formatter: function (param, index) {
+                                        return param.value + ' %'
+                                    }
+                                },
+                                emphasis: {
+                                    show: true,
+                                    textStyle: {
+                                        fontSize: '20',
+                                        fontWeight: 'bold'
+                                    }
+                                }
+                            },
+                            labelLine: {
+                                normal: {
+                                    show: false
+                                }
+                            },
+                            selectedMode: 'single',
+                            data: [
+                                {value: 91, name: 'Salaries & Benefits', selected: false},
+                                {value: 3, name: 'Program supplies (GIK)', selected: false},
+                                {value: 3, name: 'Program supplies ( Clothe Pin)', selected: false},
+                                {value: 3, name: 'Others', selected: false},
+                            ]
+                        }
+                    ]
+                }
+            },
+            stackedBarOptions() {
+                return {
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer:
+                            {
+                                type: 'shadow'
+                            },
+                        backgroundColor: 'rgba(50,50,50,0.9)',
+
+                    },
+                    legend: {
+                        bottom: 0,
+                        textStyle: {
+                            color: this.$q.dark.isActive ? 'white' : '#676767'
+                        }
+                    },
+                    color: ['#3395dd', '#ed892d', '#34393b'],
+                    // legend: {
+                    //     y: "bottom",
+                    //     data: [{name: 'Territory Sales', icon: 'circle'}, {
+                    //         name: 'Remaining Nation Sales',
+                    //         icon: 'circle'
+                    //     }]
+                    // },
+                    grid:
+                        {
+                            bottom: '10%',
+                            left: '15%',
+                            top: '9%'
+                        },
+                    calculable: true,
+                    xAxis:
+                        {
+                            type: 'value',
+                            position:
+                                'top',
+                            axisLine:
+                                {
+                                    show: false
+                                },
+                            axisLabel: {
+                                formatter: function (value, index) {
+                                    return '$' + value;
+                                },
+                                color: this.$q.dark.isActive ? 'white' : '#676767'
+                            }
+                        },
+                    yAxis: [
+                        {
+                            type: 'category',
+                            data: ['Budget 4', 'Budget 3', 'Budget 2', 'Budget 1'],
+                            axisLabel: {
+                                fontSize: 12,
+                                color: this.$q.dark.isActive ? 'white' : '#676767'
+                            }
+                        }
+                    ],
+                    series:
+                        [{
+                            name: 'Qualification',
+                            type: 'bar',
+                            stack: 'A',
+                            data: [300, 350, 400, 500]
+
+                        }, {
+                            name: 'Discovery',
+                            type: 'bar',
+                            stack: 'A',
+                            data: [100, 180, 250, 300]
+
+                        }, {
+                            name: 'Quote',
+                            type: 'bar',
+                            stack: 'A',
+                            data: [100, 120, 200, 220]
+
+                        }]
+                }
+            }
+        },
+        methods: {
+            SaveImage(type) {
+                const linkSource = this.$refs[type].getDataURL();
+                const downloadLink = document.createElement('a');
+                document.body.appendChild(downloadLink);
+                downloadLink.href = linkSource;
+                downloadLink.target = '_self';
+                downloadLink.download = type + '.png';
+                downloadLink.click();
+            },
+            exportTable() {
+                // naive encoding to csv format
+                const content = [this.columns.map(col => wrapCsvValue(col.label))].concat(
+                    this.data.map(row => this.columns.map(col => wrapCsvValue(
+                        typeof col.field === 'function'
+                            ? col.field(row)
+                            : row[col.field === void 0 ? col.name : col.field],
+                        col.format
+                    )).join(','))
+                ).join('\r\n')
+
+                const status = exportFile(
+                    'activity.csv',
+                    content,
+                    'text/csv'
+                )
+
+                if (status !== true) {
+                    this.$q.notify({
+                        message: 'Browser denied file download...',
+                        color: 'negative',
+                        icon: 'warning'
+                    })
+                }
+            }
+        }
+    }
+</script>
+
+<style scoped>
+  .blue_dark {
+    background-color: #082f56;
+  }
+
+  .green_dark {
+    background-color: #084a0b;
+  }
+
+  .orange_dark {
+    background-color: #64350e;
+  }
+</style>
